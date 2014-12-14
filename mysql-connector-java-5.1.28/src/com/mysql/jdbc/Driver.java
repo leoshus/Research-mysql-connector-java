@@ -57,9 +57,13 @@ public class Driver extends NonRegisteringDriver implements java.sql.Driver {
 
 	//
 	// Register ourselves with the DriverManager
-	//
+	//向DriverManager注册自己(Driver)
 	static {
 		try {
+			//JDBC规范中明确要求这个Driver类必须要想DriverManager注册自己，即任何一个JDBC驱动的Driver类的代码
+			//都必须有类似java.sql.DriverManager.registerDriver(new Driver());功能的代码
+			//因此如果我们要自定义一个JDBC驱动，那么我们必须实现java.sql.Driver接口，
+			//并且在实现类中调用java.sql.DriverManager.registerDriver(new Driver());
 			java.sql.DriverManager.registerDriver(new Driver());
 		} catch (SQLException E) {
 			throw new RuntimeException("Can't register driver!");
