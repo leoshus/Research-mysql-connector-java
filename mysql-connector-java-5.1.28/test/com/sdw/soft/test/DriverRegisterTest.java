@@ -23,7 +23,7 @@ public class DriverRegisterTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(DriverRegisterTest.class);
 	
-	private static final String URL = "jdbc:mysql://127.0.0.1:3306/test";
+	private static final String URL = "jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=GBK&jdbcCompliantTruncation=false";
 	private static final String USERNAME = "root";
 	private static final String PASSWORD = "root";
 	
