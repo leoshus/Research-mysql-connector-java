@@ -306,7 +306,7 @@ public class MysqlIO {
         
         try {
         	this.mysqlConnection = this.socketFactory.connect(this.host,
-        		this.port, props);
+        		this.port, props);//利用com.mysql.jdbc.StandardSocketFactory创建一个Socket 来与Mysql服务器进行握手(doHandshake())
 	        
 	
 	        if (socketTimeout != 0) {
@@ -316,10 +316,11 @@ public class MysqlIO {
 	        		/* Ignore if the platform does not support it */
 	        	}
 	        }
-	
+	        //开始握手前 返回将在握手过程中使用的Socket对象 
 	        this.mysqlConnection = this.socketFactory.beforeHandshake();
 	
 	        if (this.connection.getUseReadAheadInput()) {
+	        	//创建input流
 	        	this.mysqlInput = new ReadAheadInputStream(this.mysqlConnection.getInputStream(), 16384,
 	        			this.connection.getTraceProtocol(),
 	        			this.connection.getLog());
@@ -329,7 +330,7 @@ public class MysqlIO {
 	        	this.mysqlInput = new BufferedInputStream(this.mysqlConnection.getInputStream(),
 	        			16384);
 	        }
-	
+	        //创建output流
 	        this.mysqlOutput = new BufferedOutputStream(this.mysqlConnection.getOutputStream(),
 	        		16384);
 	

@@ -774,6 +774,8 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 		this.openStatements = new HashMap<Statement, Statement>();
 		
 		if (NonRegisteringDriver.isHostPropertiesList(hostToConnectTo)) {
+			//将address=(protocol=tcp)(host=localhost)(port=3306)形式的数据转换成java.util.Properties
+			//其中的特殊字符() and = 需要用引号引起来
 			Properties hostSpecificProps = NonRegisteringDriver.expandHostKeyValues(hostToConnectTo);
 			
 			Enumeration<?> propertyNames = hostSpecificProps.propertyNames();
@@ -829,9 +831,9 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 		}
 		
 		try {
-			this.dbmd = getMetaData(false, false);
+			this.dbmd = getMetaData(false, false);//获取数据库元数据
 			initializeSafeStatementInterceptors();
-			createNewIO(false);
+			createNewIO(false);//开始建立远程IO连接
 			unSafeStatementInterceptors();
 		} catch (SQLException ex) {
 			cleanup(ex);
@@ -2490,6 +2492,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 				mergedProps, getSocketFactoryClassName(),
 				getProxy(), getSocketTimeout(),
 				this.largeRowSizeThreshold.getValueAsInt());
+		//与Mysql服务器进行握手
 		this.io.doHandshake(this.user, this.password,
 				this.database);
 	}
