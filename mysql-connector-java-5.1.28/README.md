@@ -141,3 +141,4 @@ readDrivers = (java.util.Vector) writeDrivers.clone();
 它不管这个请求是由什么代码所引发的，只是单独负责对它可得到的资源的访问请求。比如说，一个调用者在调用doPrivileged方法时，可被标识为特权。
 AccessController做访问控制决策时，如果checkPermission方法遇到一个通过doPrivileged方法调用而被视为特权调用者，那么checkPermission方法不会作许可检查，
 表示那个访问请求是被允许的，如果调用者没有许可，则会抛出一个异常。
+####步骤二:根据Url、username、password获取connection对象
