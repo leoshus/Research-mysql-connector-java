@@ -107,4 +107,9 @@ public class DriverRegisterTest {
 		}
 		
 	}
+	
+	@Test
+	public void test04(){
+
+	}
 }

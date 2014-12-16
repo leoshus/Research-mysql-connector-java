@@ -31,5 +31,14 @@ PreparedStatement pstmt = connection.prepareStatement("select * from user");
 
 * 猛戳[这里](https://github.com/sdw2330976/Research-mysql-connector-java/tree/master/mysql-connector-java-5.1.28/mydoc/fetchConnection.md)
 
+###Socket 创建
+--------------
+* 猛戳[这里](https://github.com/sdw2330976/Research-mysql-connector-java/tree/master/mysql-connector-java-5.1.28/mydoc/createSocket.md)
 
 ***********************************************************************************************************************
+准备工作搞定 下面开始我们的CRUD
+
+###Statement与ResultSet的创建
+---------------------------
+
+* 猛戳[这里](https://github.com/sdw2330976/Research-mysql-connector-java/tree/master/mysql-connector-java-5.1.28/mydoc/statement_resultset.md)

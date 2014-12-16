@@ -4493,6 +4493,12 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 	 * @exception SQLException
 	 *                if a database access error occurs.
 	 */
+	/**
+	 * sql不管是否带有输入参数 都将被预编译并保存在PreparedStatement对象中
+	 * 在之后的使用的时候可以被高效地多次被执行
+	 * @param sql sql语句中可能包含一个或者多个'?'作为参数的占位符
+	 * @return 返回一个包含预编译sql语句的PreparedStatement对象
+	 */
 	public java.sql.PreparedStatement prepareStatement(String sql)
 			throws SQLException {
 		return prepareStatement(sql, DEFAULT_RESULT_SET_TYPE,
@@ -4527,11 +4533,17 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 	 * @exception SQLException
 	 *                if a database-access error occurs.
 	 */
+	/**
+	 * JDBC 2.0规范与上面的prepareStatement()相同,但是允许默认的resultSetType和resultSetConcurrencyType被重写
+	 * @param sql 包含占位符的sql语句
+	 * @param resultSetType see ResultSet.TYPE_XXX
+	 * @param resultSetConcurrency see ResultSet.CONCUR_XXX
+	 * @return 返回一个包含预编译SQL语句的PreparedStatement对象
+	 */
 	public java.sql.PreparedStatement prepareStatement(String sql,
 			int resultSetType, int resultSetConcurrency) throws SQLException {
 		synchronized (getConnectionMutex()) {
 			checkClosed();
-	
 			//
 			// FIXME: Create warnings if can't create results of the given
 			// type or concurrency
@@ -4541,7 +4553,8 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 			boolean canServerPrepare = true;
 			
 			String nativeSql = getProcessEscapeCodesForPrepStmts() ? nativeSQL(sql): sql;
-			
+			//this.useServerPreparedStmts 表示是否使用预编译功能 通过PreparedStatement的子类ServerPreparedStatement来实现PreparedStaetment的预编译功能
+			//`com.mysql.jdbc.ServerPreparedStatement`中的`serverExecute`方法负责告诉server使用当前提供的参数来动态绑定到编译好的sql语句上
 			if (this.useServerPreparedStmts && getEmulateUnsupportedPstmts()) {
 				canServerPrepare = canHandleAsServerPreparedStatement(nativeSql);
 			}
