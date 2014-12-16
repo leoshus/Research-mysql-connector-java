@@ -487,6 +487,7 @@ public class StatementImpl implements Statement {
 				|| (firstStatementChar == 'D') || (firstStatementChar == 'A')
 				|| (firstStatementChar == 'C') || (firstStatementChar == 'T')
 				|| (firstStatementChar == 'R')) {
+			//去除注释内容
 			String noCommentSql = StringUtils.stripComments(sql,
 					"'\"", "'\"", true, false, true, true);
 

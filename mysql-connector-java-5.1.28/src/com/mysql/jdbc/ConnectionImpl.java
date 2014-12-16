@@ -2818,7 +2818,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements
 					if (getUseUnicode()) {
 						encoding = getEncoding();
 					}
-	
+					//通过MySQLIO向Mysql server发送命令
 					return this.io.sqlQueryDirect(callingStatement, sql,
 							encoding, null, maxRows, resultSetType,
 							resultSetConcurrency, streamResults, catalog,

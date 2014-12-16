@@ -412,13 +412,14 @@ public class MysqlIO {
      *
      * @throws SQLException if a database access error occurs
      */
+    //对数据进行解析封装成结果集
     protected ResultSetImpl getResultSet(StatementImpl callingStatement,
         long columnCount, int maxRows, int resultSetType,
         int resultSetConcurrency, boolean streamResults, String catalog,
         boolean isBinaryEncoded, Field[] metadataFromCache)
         throws SQLException {
         Buffer packet; // The packet from the server
-        Field[] fields = null;
+        Field[] fields = null;//字段数组
 
         // Read in the column information
 
@@ -428,7 +429,7 @@ public class MysqlIO {
             for (int i = 0; i < columnCount; i++) {
             	Buffer fieldPacket = null;
 
-                fieldPacket = readPacket();
+                fieldPacket = readPacket();//循环处理
                 fields[i] = unpackField(fieldPacket, false);
             }
         } else {
@@ -489,6 +490,7 @@ public class MysqlIO {
         RowData rowData = null;
 
         if (!streamResults) {
+        	//封装成rowData的数据
             rowData = readSingleRowSet(columnCount, maxRows,
                     resultSetConcurrency, isBinaryEncoded,
                     (metadataFromCache == null) ? fields : metadataFromCache);
@@ -498,7 +500,7 @@ public class MysqlIO {
                     isBinaryEncoded);
             this.streamingData = rowData;
         }
-
+        //创建ResultSetImpl对象
         ResultSetImpl rs = buildResultSetWithRows(callingStatement, catalog,
         		(metadataFromCache == null) ? fields : metadataFromCache,
             rowData, resultSetType, resultSetConcurrency, isBinaryEncoded);
@@ -2409,8 +2411,9 @@ public class MysqlIO {
         String catalog, Buffer resultPacket, boolean isBinaryEncoded,
         long preSentColumnCount, Field[] metadataFromCache)
         throws SQLException {
+    	//设置指针
         resultPacket.setPosition(resultPacket.getPosition() - 1);
-
+        //读取第一条数据
         ResultSetImpl topLevelResultSet = readResultsForQueryOrUpdate(callingStatement,
                 maxRows, resultSetType, resultSetConcurrency, streamResults,
                 catalog, resultPacket, isBinaryEncoded, preSentColumnCount,
@@ -2704,7 +2707,7 @@ public class MysqlIO {
 	    			packLength += 6; // for /*[space] [space]*/
 	    		}
 
-	    		if (this.sendPacket == null) {
+	    		if (this.sendPacket == null) {//将sendPacket封装的数据包 发送给服务器
 	    			this.sendPacket = new Buffer(packLength);
 	    		} else {
 	    			this.sendPacket.clear();
@@ -2739,7 +2742,7 @@ public class MysqlIO {
 	    			this.sendPacket.writeStringNoNull(query);
 	    		}
 
-	    		queryPacket = this.sendPacket;
+	    		queryPacket = this.sendPacket;//数据包赋值
 	    	}
 
 	    	byte[] queryBuf = null;
@@ -2776,6 +2779,7 @@ public class MysqlIO {
 	    	}
 
 	    	// Send query command and sql query string
+	    	//发送查询命令与sql查询语句 并得到查询结果(socket处理)
 	    	Buffer resultPacket = sendCommand(MysqlDefs.QUERY, null, queryPacket,
 	    			false, null, 0);
 
@@ -2833,7 +2837,7 @@ public class MysqlIO {
 
 	    		fetchBeginTime = queryEndTime;
 	    	}
-
+	    	//封装成ResultSet
 	    	ResultSetInternalMethods rs = readAllResults(callingStatement, maxRows, resultSetType,
 	    			resultSetConcurrency, streamResults, catalog, resultPacket,
 	    			false, -1L, cachedMetadata);
@@ -3243,6 +3247,7 @@ public class MysqlIO {
 
             return sendFileToServer(callingStatement, fileName);
         } else {
+        	//获取结果集
             com.mysql.jdbc.ResultSetImpl results = getResultSet(callingStatement,
                     columnCount, maxRows, resultSetType, resultSetConcurrency,
                     streamResults, catalog, isBinaryEncoded,
@@ -3256,13 +3261,14 @@ public class MysqlIO {
         return ((((a) + (l)) - 1) & ~((l) - 1));
     }
 
+    //创建ResultSetImpl对象
     private com.mysql.jdbc.ResultSetImpl buildResultSetWithRows(
         StatementImpl callingStatement, String catalog,
         com.mysql.jdbc.Field[] fields, RowData rows, int resultSetType,
         int resultSetConcurrency, boolean isBinaryEncoded)
         throws SQLException {
         ResultSetImpl rs = null;
-
+        //根据传入的ResultSet常量参数生成相应模式的ResultSetImpl
         switch (resultSetConcurrency) {
         case java.sql.ResultSet.CONCUR_READ_ONLY:
             rs = com.mysql.jdbc.ResultSetImpl.getInstance(catalog, fields, rows,
@@ -3531,7 +3537,7 @@ public class MysqlIO {
 
         this.packetDebugRingBuffer.addLast(packetDump);
     }
-
+    //对rowData数据封装
     private RowData readSingleRowSet(long columnCount, int maxRows,
         int resultSetConcurrency, boolean isBinaryEncoded, Field[] fields)
         throws SQLException {
@@ -3540,7 +3546,7 @@ public class MysqlIO {
 
         boolean useBufferRowExplicit = useBufferRowExplicit(fields);
 
-        // Now read the data
+        // Now read the data读取数据
         ResultSetRow row = nextRow(fields, (int) columnCount, isBinaryEncoded,
                 resultSetConcurrency, false, useBufferRowExplicit, false, null);
 
@@ -3552,6 +3558,7 @@ public class MysqlIO {
         }
 
         while (row != null) {
+        	//读取全部数据到list
         	row = nextRow(fields, (int) columnCount, isBinaryEncoded,
                     resultSetConcurrency, false, useBufferRowExplicit, false, null);
 

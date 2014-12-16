@@ -2125,7 +2125,7 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 			try {
 				
 				resetCancelledState();
-				
+				//设置当前连接
 				MySQLConnection locallyScopedConnection = this.connection;
 				
 				this.numberOfExecutions++;
@@ -2152,7 +2152,7 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 					if (!isBatch) {
 						statementBegins();
 					}
-					
+					//调用当前连接执行execSQL 然后将之前组装好的sendPacket传递给MysqlIO的sqlQueryDirect()
 					rs = locallyScopedConnection.execSQL(this, null, maxRowsToRetrieve, sendPacket,
 						this.resultSetType, this.resultSetConcurrency,
 						createStreamingResultSet, this.currentCatalog,
@@ -2220,12 +2220,12 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 		synchronized (checkClosed().getConnectionMutex()) {
 		
 			MySQLConnection locallyScopedConn = this.connection;
-			
+			//检查this.originalSql是否是INSERT、UPDATE、DELETE、DROP、CREATE、ALTER、TRUNCATE、RENAME的 DML
+			//如果是就抛出SQLError.SQL_STATE_ILLEGAL_ARGUMENT异常
 			checkForDml(this.originalSql, this.firstCharOfStmt);
 	
 			CachedResultSetMetaData cachedMetadata = null;
 	
-
 			clearWarnings();
 
 			boolean doStreaming = createStreamingResultSet();
@@ -2246,6 +2246,7 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 				java.sql.Statement stmt = null;
 				
 				try {
+					//创建Statement对象
 					stmt = this.connection.createStatement();
 					
 					((com.mysql.jdbc.StatementImpl)stmt).executeSimpleNonQuery(this.connection, "SET net_write_timeout=" 
@@ -2257,12 +2258,12 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 				}
 			}
 			
-			Buffer sendPacket = fillSendPacket();
-
+			Buffer sendPacket = fillSendPacket();//创建数据包,其中包含了要发送给Mysql Server的查询信息
+			//关闭Statement中所有的resultSet
 			implicitlyCloseAllOpenResults();
 
 			String oldCatalog = null;
-
+			//设置当前的数据库名 并将之前的数据库名记录下来 查询完成之后还有恢复过来
 			if (!locallyScopedConn.getCatalog().equals(this.currentCatalog)) {
 				oldCatalog = locallyScopedConn.getCatalog();
 				locallyScopedConn.setCatalog(this.currentCatalog);
@@ -2271,6 +2272,7 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 			//
 			// Check if we have cached metadata for this query...
 			//
+			//检查是否有缓存的数据 如果有直接 从缓存中取
 			if (locallyScopedConn.getCacheResultSetMetadata()) {
 				cachedMetadata = locallyScopedConn.getCachedMetaData(this.originalSql);
 			}
@@ -2288,7 +2290,8 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 				// setMaxRows() hasn't been used on any Statements
 				// generated from the current Connection (saves
 				// a query, and network traffic).
-				if (this.hasLimitClause) {
+				if (this.hasLimitClause) {//当前SQL中是否包含limit语句
+					//executeInternal执行查询
 					this.results = executeInternal(this.maxRows, sendPacket,
 							createStreamingResultSet(), true,
 							metadataFromCache, false);
@@ -2512,14 +2515,27 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 	 * @throws SQLException
 	 *             if an error occurs.
 	 */
+	/**
+	 * 封装要发送给Mysql server的sendPacket包
+	 * @param batchedParameterStrings 参数转换成byte后的值(statement.set(1,"1")来设置sql语句参数的值)
+	 * @param batchedParameterStreams 只有在调用存储过程batch(CallableStatement)的时候才会用到它,否则它数组中的值设置为null
+	 * @param batchedIsStream 是否为stream的标志，若调用的是PreparedStatement数组中的值均为false,若调用的是CallableStatement则数组中的值均为true
+	 * @param batchedStreamLengths 标识参数是否为null 设置为false
+	 * 这个几个一维数组大小一致 有几个待设置的参数  一维数组的大小就是多少
+	 * @return
+	 * @throws SQLException
+	 */
 	protected Buffer fillSendPacket(byte[][] batchedParameterStrings,
 			InputStream[] batchedParameterStreams, boolean[] batchedIsStream,
 			int[] batchedStreamLengths) throws SQLException {
 		synchronized (checkClosed().getConnectionMutex()) {
+			//从connection的io中获取发送数据包 然后清空它
 			Buffer sendPacket = this.connection.getIO().getSharedSendPacket();
-	
+			//首先清空这个数据包
 			sendPacket.clear();
-	
+			//数据包的第一位为一个操作标识符(MysqlDefs.QUERY)表示驱动向服务器发送的连接的操作信号,
+			//包括QUERY,PING,RELOAD,SHUTDOWN,PROCESS_INFO,QUIT,SLEEP等等
+			//该操作信号并不是针对sql语句的CRUD操作 而是针对服务器的一个操作
 			sendPacket.writeByte((byte) MysqlDefs.QUERY);
 	
 			boolean useStreamLengths = this.connection
@@ -2554,7 +2570,7 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 					ensurePacketSize += batchedStreamLengths[i];
 				}
 			}
-	
+			//判断sendPacket是否够大 否则按照1.25倍来扩充
 			if (ensurePacketSize != 0) {
 				sendPacket.ensureCapacity(ensurePacketSize);
 			}
@@ -2564,21 +2580,24 @@ public class PreparedStatement extends com.mysql.jdbc.StatementImpl implements
 				sendPacket.writeBytesNoNull(commentAsBytes);
 				sendPacket.writeBytesNoNull(Constants.SPACE_STAR_SLASH_SPACE_AS_BYTES);
 			}
-			
+			//遍历所有参数 将之前分割的sql(根据sql中的?将sql分成字符串数组staticSqlStrings) 与现在的参数列表合并  拼装出sql
 			for (int i = 0; i < batchedParameterStrings.length; i++) {
+				//batchedParameterStrings 和batchedParameterStreams均为空 则抛出异常 表示参数设置出错
 				checkAllParametersSet(batchedParameterStrings[i],
 						batchedParameterStreams[i], i);
-	
+				//将之前分割的sql转成byte[]写入到sendPacket
 				sendPacket.writeBytesNoNull(this.staticSqlStrings[i]);
-	
+				//如果参数是通过CallableStatement传递过来的 就使用batchedParameterStreams中的值来替换sql中的?号占位
 				if (batchedIsStream[i]) {
 					streamToBytes(sendPacket, batchedParameterStreams[i], true,
 							batchedStreamLengths[i], useStreamLengths);
 				} else {
+					//否则就用batchedParameterStrings来替换sql中的?占位
 					sendPacket.writeBytesNoNull(batchedParameterStrings[i]);
 				}
 			}
-	
+			//原始sql中的最后一个'?'后面可能还会有order by等语句,因此staticSqlStrings的长度会比参数的个数大1
+			//这里将staticSqlStrings中最后一段sql加入到sendPacket中
 			sendPacket
 					.writeBytesNoNull(this.staticSqlStrings[batchedParameterStrings.length]);
 	
