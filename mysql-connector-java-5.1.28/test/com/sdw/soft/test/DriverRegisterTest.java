@@ -1,5 +1,7 @@
 package com.sdw.soft.test;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -110,6 +112,26 @@ public class DriverRegisterTest {
 	
 	@Test
 	public void test04(){
+		AccessController.doPrivileged(new PrivilegedAction<String>() {
 
+			@Override
+			public String run() {
+
+				return null;
+			}
+			
+		});
+	}
+	
+	@Test
+	public void test05(){
+		AccessController.doPrivileged(new PrivilegedAction(){
+			@Override
+			public Object run() {
+				System.out.println(System.getProperty("jdbc.drivers"));
+				return null;
+			}
+			
+		});
 	}
 }
